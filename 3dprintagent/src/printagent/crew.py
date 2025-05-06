@@ -95,14 +95,15 @@ APIKEY = os.environ['OPENAI_API_KEY']
 
 @dataclasses.dataclass
 class Agent:
-
+    config : dict
     SYS_PROMPT : str = ""
     name : str = ""
+    def __post_init__(self):
+        self.config_to_sys_prompt(self.config)
     
-    def config_to_sys_prompt(self, agent_name,config):
+    def config_to_sys_prompt(self,config):
         assert "role" in config and "goal" in config and "backstory" in config
         try:
-            self.name = agent_name
             self.SYS_PROMPT = f"""
             Agent Description:
 
@@ -115,14 +116,16 @@ class Agent:
             raise e
 @dataclasses.dataclass
 class Task:
+    config : str
     SYS_PROMPT : str = ""
     task_name : str = ""
     agent : Agent = None
-    def config_to_sys_prompt(self, task_name,config, agent : Agent = None):
+    def __post_init__(self):
+        self.config_to_sys_prompt(self.task_name,self.config)
+    def config_to_sys_prompt(self,config, agent : Agent = None):
         assert "description" in config and "expected_output" in config
         try:
             agent_description = agent.SYS_PROMPT
-            self.task_name = task_name
             self.SYS_PROMPT = f"""
             Task Description:
             {config["description"]}
@@ -135,11 +138,13 @@ class Task:
             raise e
 @dataclasses.dataclass
 class LLM:
+    task : Task
     model : str = "chatgpt-4o-latest"
     openai_uri : str = ""
     system_prompt_payload : str = ""
     __apikey : str = APIKEY
-
+    def __post_init__(self,task):
+        self.setup(self.task)
     def setup(self, task : Task):
         self.system_prompt_payload = {
             "role" : "system",
@@ -170,5 +175,42 @@ class LLM:
             return response.choices[0].message.content
         return None
             
-                 
-        
+@dataclasses.dataclass
+class Flow:
+
+    # agents : List[Agent] = dataclasses.field(default_factory=list)
+    process : List[LLM] = dataclasses.field(default_factory=list)
+
+    def run(self,input = None, image_input = None):
+        result = None
+        for proc in self.process:
+            if image_input:
+                result = proc.process(input, image_input,True)
+            else:
+                result = proc.process(input)
+            input = result
+        return result
+    
+def main():
+
+    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//src//printagent//config//agents.yaml", "r") as f:
+        agents_config = yaml.safe_load(f)
+    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//src//printagent//config//tasks.yaml", "r") as f:
+        tasks_config = yaml.safe_load(f)
+    agents = {}
+    tasks = {}
+    for agent, desc in agents_config.items():
+        agents[agent] = Agent(desc,name=agent)
+    for task, desc in tasks_config.items():
+        tasks[task] = Task(desc,task_name=task,agent=agents[desc["agent"]])
+    LLMs : List[LLM] = []
+    for task,task_d in tasks.items():
+        LLMs.append(LLM(task_d))
+
+    observer, reasoner, planner = LLMs[0], LLMs[1], LLMs[2]
+
+    observations = observer.process()
+    extra_info = reasoner.process(f"Observations: {observations}")
+    plans = planner.process(f"Observations: {observations}, reasoning modules: {extra_info}")
+    logger.info(plans)
+

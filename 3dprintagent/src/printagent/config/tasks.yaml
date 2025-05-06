@@ -20,7 +20,6 @@ observation_task:
 reasoning_task:
   description: >
     Given Observations
-    Observations: {observations}
     the task is to rephrase, rewrite, and
     reorder each reasoning module to better
     identify the information needed to resolve
@@ -57,12 +56,12 @@ reasoning_task:
 
 planning_task:
   description: >
-    Given the observed failures: {observations} in the current layer, the task is to think step by step
-    and create a step-by-step plan to operationalize the reasoning modules {adapted_recon_reasoning}. This plan should gather
+    Given the observed failures in the current layer, the task is to think step by step
+    and create a step-by-step plan to operationalize the reasoning modules. This plan should gather
     information about the most contributing factors to resolve the failure in the next layer to ensure print rating is 10/10.
     Constraints:
     - No Access to G-Code and Slicer
-    - Available Objects for Query :{printer_obj}
+    - Available Objects for Query : temprature_sensor, extruder 
     Tasks:
     1. Identify Potential Causes :
     - Provide a list of potential causes for the observed failure.
@@ -77,29 +76,68 @@ planning_task:
     - Ensure the information needed is very specific and focuses on the most probable cause of the failure.
     - Avoid semantically repeated or redundant information.
     Provided Information:
-    - Known Information : {information_known}
+    - Known Information :
+      extruder : 
+      {
+      "id": "E0",
+      "temperature_sensor": "hotend_sensor_0",
+      "target_temperature": 210.0,
+      "current_temperature": 204.5,
+      "stepper_status": "enabled",
+      "position_mm": 135.0,
+      "feedrate_mm_per_s": 2.5,
+      "filament_type": "PLA",
+      "filament_diameter_mm": 1.75,
+      "motor_current_mA": 800,
+      "retraction_enabled": true,
+      "steps_per_mm": 93.0,
+      "last_command": "G1 E10 F150"
+      }
+      temprature_sensor:
+      {
+      "name": "hotend_sensor_0",
+      "type": "thermistor",
+      "location": "hotend",
+      "current_temperature": 204.5,
+      "target_temperature": 210.0,
+      "status": "heating",
+      "fault": false,
+      "temperature_unit": "C",
+      "sensor_id": "T0"
+      }
+      {
+      "name": "bed_sensor",
+      "type": "thermistor",
+      "location": "heatbed",
+      "current_temperature": 58.0,
+      "target_temperature": 60.0,
+      "status": "stable",
+      "fault": false,
+      "temperature_unit": "C",
+      "sensor_id": "B"
+      }
     Note :the task is to think step-by-step like an engineer and generate a comprehensive list of required information to
     facilitate accurate conclusions in similar future tasks. Do not produce invalid content.
   expected_output: >
     List of all the results from the task.
   agent: planner
 
-execution_task:
-  description: >
-    the task is to query a 3D printer running the Moonraker API for requested information.
-    the agent has access to the following tools:{tools}
-    Here is the information known to you: {information_known}
-    NOTE: The current maximum print speed is (speed*speed_factor) found in gcode_move.
-    Here are the printer and Gcode objects you can query {printer_obj}
-    the agent can write additional python code to interpret the information or process information from the
-    printer. If you dont find the required info try semantically similar words.
-  expected_output: >
-    The output follows the below JSON
-    {
-    Question: the input question you must answer,
-    Thought: you should always think about what to do,
-    Action: the action to take, should be one of [{tool_names}],
-    Action Input: the input to the action,
-    Observation: the result of the action
-    }
-  agent: executor
+# execution_task:
+#   description: >
+#     the task is to query a 3D printer running the Moonraker API for requested information.
+#     the agent has access to the following tools:{tools}
+#     Here is the information known to you: {information_known}
+#     NOTE: The current maximum print speed is (speed*speed_factor) found in gcode_move.
+#     Here are the printer and Gcode objects you can query {printer_obj}
+#     the agent can write additional python code to interpret the information or process information from the
+#     printer. If you dont find the required info try semantically similar words.
+#   expected_output: >
+#     The output follows the below JSON
+#     {
+#     Question: the input question you must answer,
+#     Thought: you should always think about what to do,
+#     Action: the action to take, should be one of [{tool_names}],
+#     Action Input: the input to the action,
+#     Observation: the result of the action
+#     }
+#   agent: executor
