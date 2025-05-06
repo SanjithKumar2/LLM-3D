@@ -87,6 +87,7 @@ import openai
 import dotenv
 import logging
 import os
+import base64
 
 logger = logging.getLogger(__name__)
 dotenv.load_dotenv("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//.env")
@@ -134,11 +135,40 @@ class Task:
             raise e
 @dataclasses.dataclass
 class LLM:
-
+    model : str = "chatgpt-4o-latest"
     openai_uri : str = ""
-    is_image : bool = False
-    system_prompt : str = ""
+    system_prompt_payload : str = ""
     __apikey : str = APIKEY
 
     def setup(self, task : Task):
-        pass
+        self.system_prompt_payload = {
+            "role" : "system",
+            "content" : task.SYS_PROMPT
+        }
+    def encode_image(self, image_path):
+        with open(image_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    def process(self, input_text = None, input_image = None, is_image = False):
+        image = None
+        content = []
+        if input_text:
+            content.append({"type":"text","text":input_text})
+        if is_image:
+            assert input_image != None
+            if isinstance(input_image, str):
+                image = self.encode_image(input_image)
+                content.append({"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{image}"}})
+        if content:
+            user_inp = {
+                "role":"user", "content" : content
+            }
+            response = openai.chat.completions.create(
+                model=self.model,
+                messages=[self.system_prompt_payload,user_inp],
+                max_tokens=1000
+            )
+            return response.choices[0].message.content
+        return None
+            
+                 
+        
