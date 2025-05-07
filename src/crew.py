@@ -94,7 +94,7 @@ import json
 from tools.custom_tool import tools, MakeRequests
 
 logger = logging.getLogger(__name__)
-dotenv.load_dotenv("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//.env")
+dotenv.load_dotenv("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//.env")
 APIKEY = os.environ['OPENAI_API_KEY']
 makerequests = MakeRequests()
 @dataclasses.dataclass
