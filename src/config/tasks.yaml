@@ -130,6 +130,6 @@ execution_task:
   expected_output: >
     The final output must follow the below JSON
     {
-    commands : [List of GCode Commands to be executed]
+    "commands" : [List of GCode Commands to be executed]
     }
   agent: executor

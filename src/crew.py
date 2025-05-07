@@ -162,15 +162,16 @@ class LLM:
     def encode_image(self, image_path):
         with open(image_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
-    def process(self, input_text = None, input_image = None, is_image = False):
+    def process(self, input_text = None, input_image = None, names = None,is_image = False):
         image = None
         content = []
         if input_text:
             content.append({"type":"text","text":input_text})
         if is_image:
             assert input_image != None
-            if isinstance(input_image, str):
-                image = self.encode_image(input_image)
+            for name in names:
+                image_path = os.path.join(input_image,name)
+                image = self.encode_image(image_path)
                 content.append({"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{image}"}})
         if content:
             user_inp = {
@@ -201,10 +202,9 @@ class Flow:
         return result
     
 def main():
-
-    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//src//config//agents.yaml", "r") as f:
+    with open(".//config//agents.yaml", "r") as f:
         agents_config = yaml.safe_load(f)
-    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//src//config//tasks.yaml", "r") as f:
+    with open(".//config//tasks.yaml", "r") as f:
         tasks_config = yaml.safe_load(f)
     agents = {}
     tasks = {}
@@ -217,14 +217,19 @@ def main():
         LLMs.append(LLM(task=task_d))
 
     observer, reasoner, planner, executor = LLMs[0], LLMs[1], LLMs[2], LLMs[3]
-    image_path = "C://Users//ASUS//Desktop//AI Projects//LLM-Prt//src//sample//test.jpg"
-    observations = observer.process("Layer Level 9",image_path,is_image=True)
+    image_path = ".//sample"
+    names = os.listdir(image_path)
+    observations = observer.process("Layer Level 9",image_path,names,is_image=True)
     extra_info = reasoner.process(f"Observations: {observations}")
     plans = planner.process(f"Observations: {observations}, reasoning modules: {extra_info}")
     executor = executor.process(f"Known Information : {plans}")
     commands = json.loads(executor)
-    for command in commands['commands']:
-        response = makerequests.send_post('/printer/gcode/script',{"script":command})
+    print(commands)
+    try:
+        for command in commands['commands']:
+            response = makerequests.send_post('/printer/gcode/script',{"script":command})
+    except Exception as e:
+        pass
 
 if __name__ == "__main__":
     main()
