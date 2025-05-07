@@ -122,22 +122,14 @@ planning_task:
     List of all the results from the task.
   agent: planner
 
-# execution_task:
-#   description: >
-#     the task is to query a 3D printer running the Moonraker API for requested information.
-#     the agent has access to the following tools:{tools}
-#     Here is the information known to you: {information_known}
-#     NOTE: The current maximum print speed is (speed*speed_factor) found in gcode_move.
-#     Here are the printer and Gcode objects you can query {printer_obj}
-#     the agent can write additional python code to interpret the information or process information from the
-#     printer. If you dont find the required info try semantically similar words.
-#   expected_output: >
-#     The output follows the below JSON
-#     {
-#     Question: the input question you must answer,
-#     Thought: you should always think about what to do,
-#     Action: the action to take, should be one of [{tool_names}],
-#     Action Input: the input to the action,
-#     Observation: the result of the action
-#     }
-#   agent: executor
+execution_task:
+  description: >
+    the task is to query a 3D printer running the Moonraker API for relevant information, and return a set of GCode commands to make the print better in the next layer, The final output must be returned after there is enough information to come to a conclusion.
+    the agent can write additional python code to interpret the information or process information from the
+    printer. If you dont find the required info try semantically similar words.
+  expected_output: >
+    The final output must follow the below JSON
+    {
+    commands : [List of GCode Commands to be executed]
+    }
+  agent: executor
