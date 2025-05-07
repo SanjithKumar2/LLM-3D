@@ -90,11 +90,12 @@ import os
 import base64
 from typing import List
 import yaml
-from tools.custom_tool import tools
+import json
+from tools.custom_tool import tools, MakeRequests
 logger = logging.getLogger(__name__)
 dotenv.load_dotenv("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//.env")
 APIKEY = os.environ['OPENAI_API_KEY']
-
+makerequests = MakeRequests()
 @dataclasses.dataclass
 class Agent:
     config : dict
@@ -200,9 +201,9 @@ class Flow:
     
 def main():
 
-    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//src//printagent//config//agents.yaml", "r") as f:
+    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//src//config//agents.yaml", "r") as f:
         agents_config = yaml.safe_load(f)
-    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//src//printagent//config//tasks.yaml", "r") as f:
+    with open("C://Users//ASUS//Desktop//AI Projects//LLM-Prt//src//config//tasks.yaml", "r") as f:
         tasks_config = yaml.safe_load(f)
     agents = {}
     tasks = {}
@@ -215,12 +216,14 @@ def main():
         LLMs.append(LLM(task=task_d))
 
     observer, reasoner, planner, executor = LLMs[0], LLMs[1], LLMs[2], LLMs[3]
-    image_path = "C://Users//ASUS//Desktop//AI Projects//LLM-Prt//3dprintagent//src//printagent//sample//test.jpg"
+    image_path = "C://Users//ASUS//Desktop//AI Projects//LLM-Prt//src//sample//test.jpg"
     observations = observer.process("Layer Level 9",image_path,is_image=True)
     extra_info = reasoner.process(f"Observations: {observations}")
     plans = planner.process(f"Observations: {observations}, reasoning modules: {extra_info}")
     executor = executor.process(f"Known Information : {plans}")
-    print(executor)
+    commands = json.loads(executor)
+    for command in commands['commands']:
+        response = makerequests.send_post('/printer/gcode/script',{"script":command})
 
 if __name__ == "__main__":
     main()
